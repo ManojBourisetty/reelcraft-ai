@@ -34,31 +34,44 @@ export function compressImage(file) {
   });
 }
 
+const VIDEO_FRAME_TIMEOUT_MS = 8000;
+
 export function extractVideoFrame(file) {
   return new Promise((resolve) => {
     const video = document.createElement('video');
     const url = URL.createObjectURL(file);
     video.muted = true;
+    video.playsInline = true;
     video.preload = 'metadata';
 
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      URL.revokeObjectURL(url);
+      resolve(result);
+    };
+
     video.onloadeddata = () => {
-      video.currentTime = Math.min(1, video.duration * 0.1);
+      // duration may be Infinity/NaN for some streamed/odd-encoded files
+      const seekTo = Number.isFinite(video.duration) ? Math.min(1, video.duration * 0.1) : 0;
+      video.currentTime = seekTo;
     };
 
     video.onseeked = () => {
-      const canvas = drawToCanvas(video, video.videoWidth || 640, video.videoHeight || 480);
-      const base64 = canvas.toDataURL('image/jpeg', JPEG_QUALITY).split(',')[1];
-      URL.revokeObjectURL(url);
-      resolve(base64);
+      try {
+        const canvas = drawToCanvas(video, video.videoWidth || 640, video.videoHeight || 480);
+        const base64 = canvas.toDataURL('image/jpeg', JPEG_QUALITY).split(',')[1];
+        finish(base64);
+      } catch {
+        finish(null);
+      }
     };
 
-    // Fallback — some browsers don't fire onseeked reliably
-    video.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-    setTimeout(() => {
-      if (!video.src) return;
-      URL.revokeObjectURL(url);
-      resolve(null);
-    }, 8000);
+    // Fallback — some browsers don't fire onseeked/onloadeddata reliably
+    video.onerror = () => finish(null);
+    const timer = setTimeout(() => finish(null), VIDEO_FRAME_TIMEOUT_MS);
 
     video.src = url;
     video.load();

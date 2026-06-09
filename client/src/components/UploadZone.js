@@ -7,8 +7,11 @@ import { processFile } from '../lib/mediaProcessor';
 const ACCEPTED = {
   'image/jpeg': ['.jpg', '.jpeg'],
   'image/png': ['.png'],
+  'image/webp': ['.webp'],
   'video/mp4': ['.mp4'],
   'video/quicktime': ['.mov'],
+  'video/webm': ['.webm'],
+  'video/x-m4v': ['.m4v'],
 };
 
 export default function UploadZone({ onFilesReady }) {
@@ -20,7 +23,7 @@ export default function UploadZone({ onFilesReady }) {
     setUploadError(null);
 
     if (rejected.length > 0) {
-      setUploadError(`${rejected.length} file(s) rejected — only JPG, PNG, MP4, MOV allowed.`);
+      setUploadError(`${rejected.length} file(s) rejected — only JPG, PNG, WEBP, MP4, MOV, WEBM, M4V allowed.`);
     }
     if (accepted.length === 0) return;
 
@@ -85,7 +88,7 @@ export default function UploadZone({ onFilesReady }) {
               Drag & drop media here
             </p>
             <p style={{ color: 'var(--color-muted)', fontSize: 13, margin: 0 }}>
-              JPG, PNG, MP4, MOV · up to 10 files
+              Photos (JPG, PNG, WEBP) or videos (MP4, MOV, WEBM, M4V) · up to 10 files
             </p>
           </>
         )}
