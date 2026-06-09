@@ -1,11 +1,11 @@
 # ReelCraft AI
 
-AI-powered faceless Instagram content creation assistant. Upload your media → Claude analyzes it, filters out people, then generates reel concepts, captions, hashtags, and a production checklist.
+AI-powered faceless Instagram content creation assistant. Upload your media → Gemini AI analyzes it, filters out people, then generates reel concepts, captions, hashtags, and a production checklist.
 
 ## Prerequisites
 
 - Node.js 18+
-- An Anthropic API key ([get one here](https://console.anthropic.com))
+- A **free** Google AI Studio API key — [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) (no credit card required)
 
 ## Setup
 
@@ -20,40 +20,34 @@ cd ../client && npm install
 
 ### 2. Configure API key
 
-Edit `.env` in the project root:
+Copy `.env.example` to `.env` and add your key:
+
+```bash
+cp .env.example .env
+```
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...your-key-here...
+GOOGLE_AI_API_KEY=your_key_here
 PORT=3001
 ```
 
 ### 3. Start development servers
 
 ```bash
-# From project root — starts both server (3001) and client (3000)
+# From project root — starts both server (:3001) and client (:3000)
 npm run dev
-```
-
-Or run separately:
-
-```bash
-# Terminal 1
-cd server && node index.js
-
-# Terminal 2
-cd client && npm start
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
 ## Usage
 
-1. **Upload** — drag-and-drop up to 10 JPG/PNG/MP4/MOV files
+1. **Upload** — drag-and-drop up to 10 JPG/PNG/MP4/MOV files (processed locally in your browser)
 2. **Analyze** — click "Analyze My Media" in the top bar
-3. **Review** — flagged assets (people detected) appear with a red overlay; clean assets show a reel-score badge
-4. **Reel Concepts** — 3 AI-generated concepts appear in the right panel; expand any to see clip order, script, and music
+3. **Review** — flagged assets (people detected) get a red overlay; clean assets show a reel-score badge (1–10)
+4. **Reel Concepts** — 3 AI-generated concepts appear in the right panel; expand any to see clip order, script, and music suggestions
 5. **Captions** — click "Generate Captions & Hashtags" on a concept; a bottom drawer opens with 3 caption styles + 30 hashtags
-6. **Export** — copy captions/hashtags to clipboard, or download the full production brief as a `.txt` file
+6. **Export** — copy to clipboard or download the full production brief as a `.txt` file
 
 ## Tech Stack
 
@@ -61,34 +55,42 @@ Open [http://localhost:3000](http://localhost:3000).
 |-------|------|
 | Frontend | React, Tailwind CSS |
 | Backend | Node.js, Express |
-| AI | Anthropic Claude (`claude-sonnet-4-20250514`) |
-| File uploads | Multer |
-| Image processing | Sharp |
-| Video frames | fluent-ffmpeg (optional) |
+| AI | Google Gemini 1.5 Flash (free tier — 15 RPM, 1M tokens/day) |
+| Image processing | Browser Canvas API (client-side, no server storage) |
+| Deployment | Vercel (serverless) |
 
 ## Project Structure
 
 ```
 reelcraft-ai/
-├── client/              # React SPA
+├── api/
+│   └── index.js             # Vercel serverless entry point
+├── client/
 │   └── src/
-│       ├── components/  # TopBar, UploadZone, MediaGrid, ReelConceptsPanel, CaptionDrawer, NichePanel
-│       └── lib/api.js   # Axios wrappers for all backend calls
+│       ├── components/      # TopBar, UploadZone, MediaGrid, ReelConceptsPanel, CaptionDrawer, NichePanel
+│       └── lib/
+│           ├── api.js        # Axios wrappers
+│           └── mediaProcessor.js  # Client-side Canvas compression + video frame extraction
 ├── server/
 │   ├── routes/
-│   │   ├── upload.js    # Multer file handling
-│   │   ├── analyze.js   # Per-asset Claude Vision analysis
-│   │   └── generate.js  # Reel concepts, captions, niche detection
+│   │   ├── analyze.js       # Gemini Vision — people detection + content scoring
+│   │   └── generate.js      # Reel concepts, captions, niche detection
 │   ├── utils/
-│   │   ├── claudeClient.js  # SDK singleton
-│   │   └── imageUtils.js    # Sharp resize + optional ffmpeg frame extraction
+│   │   └── aiClient.js      # Gemini SDK singleton
 │   └── index.js
-├── uploads/             # Temp file storage (not committed)
-└── .env
+├── vercel.json
+└── .env.example
 ```
+
+## Vercel Deployment
+
+1. Push to GitHub (already done if you cloned this)
+2. Go to [vercel.com/new](https://vercel.com/new) → Import this repo
+3. Add environment variable: `GOOGLE_AI_API_KEY=your_key_here`
+4. Deploy — Vercel builds the React client and runs Express as a serverless function
 
 ## Notes
 
-- `uploads/` is ephemeral — files persist for the session and can be cleaned up manually
-- Video frame extraction requires `ffmpeg` on your PATH; without it, videos are analyzed by filename only
-- All Claude calls use `claude-sonnet-4-20250514` and return structured JSON
+- No server-side file storage — images are compressed to JPEG via Canvas API in the browser before being sent to the backend, keeping request sizes small and the app fully stateless
+- Free Gemini tier resets daily; for higher volume upgrade to a paid Google AI Studio plan
+- Videos: first frame is extracted client-side via an in-browser `<video>` element + canvas
