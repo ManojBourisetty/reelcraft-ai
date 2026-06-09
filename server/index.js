@@ -1,4 +1,11 @@
-require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+// dotenv is only needed for local dev — Vercel injects env vars directly
+// and may not bundle devDependencies into the serverless function.
+try {
+  require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+} catch {
+  // not available in production — env vars come from the platform
+}
+
 const express = require('express');
 const cors = require('cors');
 
