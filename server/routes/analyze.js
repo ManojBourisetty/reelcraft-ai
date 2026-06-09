@@ -3,7 +3,7 @@ const { getVisionModel } = require('../utils/aiClient');
 
 const router = express.Router();
 
-const ANALYSIS_PROMPT = `You are a content analysis AI for a faceless Instagram influencer tool. Analyze this image.
+const ANALYSIS_PROMPT = `You are a content analysis AI for an Instagram reel creation tool. Analyze this image.
 Return ONLY valid JSON — no markdown fences, no extra text — with exactly these fields:
 {
   "hasPeople": boolean,

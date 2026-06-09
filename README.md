@@ -1,6 +1,6 @@
 # ReelCraft AI
 
-AI-powered faceless Instagram content creation assistant. Upload your media → Gemini AI analyzes it, filters out people, then generates reel concepts, captions, hashtags, and a production checklist.
+AI-powered Instagram content creation assistant. Upload your media → Gemini AI analyzes it, scores each asset for reel potential, then generates reel concepts, captions, hashtags, and a production checklist.
 
 ## Prerequisites
 
@@ -44,7 +44,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 1. **Upload** — drag-and-drop up to 10 JPG/PNG/MP4/MOV files (processed locally in your browser)
 2. **Analyze** — click "Analyze My Media" in the top bar
-3. **Review** — flagged assets (people detected) get a red overlay; clean assets show a reel-score badge (1–10)
+3. **Review** — each asset shows a reel-score badge (1–10) and content type; assets containing people get a small badge for reference
 4. **Reel Concepts** — 3 AI-generated concepts appear in the right panel; expand any to see clip order, script, and music suggestions
 5. **Captions** — click "Generate Captions & Hashtags" on a concept; a bottom drawer opens with 3 caption styles + 30 hashtags
 6. **Export** — copy to clipboard or download the full production brief as a `.txt` file
@@ -73,7 +73,7 @@ reelcraft-ai/
 │           └── mediaProcessor.js  # Client-side Canvas compression + video frame extraction
 ├── server/
 │   ├── routes/
-│   │   ├── analyze.js       # Gemini Vision — people detection + content scoring
+│   │   ├── analyze.js       # Gemini Vision — content scoring + people detection (informational)
 │   │   └── generate.js      # Reel concepts, captions, niche detection
 │   ├── utils/
 │   │   └── aiClient.js      # Gemini SDK singleton

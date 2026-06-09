@@ -55,10 +55,10 @@ export default function App() {
       const { results } = await analyzeMedia(uploadedFiles);
       setAnalyzedAssets(results);
 
-      const clean = results.filter((r) => r.analysis && !r.analysis.hasPeople);
+      const usable = results.filter((r) => r.analysis);
 
-      if (clean.length === 0) {
-        setError('All uploaded media contains people. Upload faceless content to generate reels.');
+      if (usable.length === 0) {
+        setError('Analysis failed for all uploaded media. Please try again.');
         setIsAnalyzing(false);
         setAnalysisStep('');
         return;
@@ -66,15 +66,15 @@ export default function App() {
 
       setAnalysisStep('Generating reel concepts...');
       setIsGeneratingReels(true);
-      const cleanAssets = clean.map((r) => r.analysis);
-      const { concepts } = await generateReels(cleanAssets);
+      const usableAssets = usable.map((r) => r.analysis);
+      const { concepts } = await generateReels(usableAssets);
       setReelConcepts(concepts);
       setActiveConcept(concepts[0]);
       setIsGeneratingReels(false);
 
       setAnalysisStep('Detecting your niche...');
       setIsDetectingNiche(true);
-      const niche = await detectNiche(cleanAssets);
+      const niche = await detectNiche(usableAssets);
       setNicheData(niche);
       setIsDetectingNiche(false);
 
@@ -103,8 +103,8 @@ export default function App() {
   }, []);
 
   const isWorking = isAnalyzing || isGeneratingReels || isDetectingNiche;
-  const filteredAssets = analyzedAssets.filter((a) => a.analysis && !a.analysis.hasPeople);
-  const flaggedAssets = analyzedAssets.filter((a) => a.analysis && a.analysis.hasPeople);
+  const usableAssets = analyzedAssets.filter((a) => a.analysis);
+  const peopleCount = analyzedAssets.filter((a) => a.analysis?.hasPeople).length;
 
   return (
     <div style={{ background: 'var(--color-dark)', minHeight: '100vh' }}>
@@ -150,8 +150,8 @@ export default function App() {
                   onSelectConcept={setActiveConcept}
                   onGetCaptions={handleGetCaptions}
                   isGeneratingCaptions={isGeneratingCaptions}
-                  filteredCount={filteredAssets.length}
-                  flaggedCount={flaggedAssets.length}
+                  usableCount={usableAssets.length}
+                  peopleCount={peopleCount}
                 />
               )}
 

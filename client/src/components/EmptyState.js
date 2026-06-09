@@ -1,7 +1,7 @@
 export default function EmptyState() {
   const steps = [
-    { emoji: '📸', title: 'Upload your media', desc: 'Photos or videos — no people, please' },
-    { emoji: '🤖', title: 'AI analyzes content', desc: 'Scores assets and filters faces' },
+    { emoji: '📸', title: 'Upload your media', desc: 'Photos or videos — any content' },
+    { emoji: '🤖', title: 'AI analyzes content', desc: 'Scores each asset and tags content type' },
     { emoji: '🎬', title: 'Get 3 reel concepts', desc: 'Scripts, clips, music & transitions' },
     { emoji: '📋', title: 'Copy & post', desc: 'Captions, hashtags, production checklist' },
   ];

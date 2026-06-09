@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle, Star, Video } from 'lucide-react';
+import { Star, Users, Video } from 'lucide-react';
 
 function ScoreBadge({ score }) {
   const color = score >= 7 ? '#34D399' : score >= 5 ? '#FBBF24' : '#F87171';
@@ -15,9 +15,20 @@ function ScoreBadge({ score }) {
   );
 }
 
-function MediaThumbnail({ file, analysis, isAnalyzing }) {
-  const hasPeople = analysis?.hasPeople;
+function PeopleBadge() {
+  return (
+    <div style={{
+      position: 'absolute', top: 6, left: 6,
+      background: 'rgba(0,0,0,0.8)', borderRadius: 6, padding: '2px 6px',
+      display: 'flex', alignItems: 'center', gap: 3,
+      fontSize: 11, fontWeight: 600, color: '#A78BFA',
+    }} title="People detected in this asset">
+      <Users size={10} />
+    </div>
+  );
+}
 
+function MediaThumbnail({ file, analysis, isAnalyzing }) {
   return (
     <div style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', background: 'var(--color-card)' }}>
       {file.thumbnailUrl ? (
@@ -32,34 +43,14 @@ function MediaThumbnail({ file, analysis, isAnalyzing }) {
         </div>
       )}
 
-      {hasPeople && (
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'rgba(239,68,68,0.6)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-        }}>
-          <span style={{ fontSize: 22 }}>✕</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#fff', textAlign: 'center', padding: '0 8px' }}>
-            People detected
-          </span>
-        </div>
-      )}
-
       {isAnalyzing && !analysis && (
         <div className="skeleton" style={{ position: 'absolute', inset: 0 }} />
       )}
 
-      {analysis && !hasPeople && <ScoreBadge score={analysis.reelScore} />}
+      {analysis?.hasPeople && <PeopleBadge />}
+      {analysis && <ScoreBadge score={analysis.reelScore} />}
 
       {analysis && (
-        <div style={{ position: 'absolute', top: 6, left: 6 }}>
-          {hasPeople
-            ? <AlertCircle size={16} color="#F87171" fill="rgba(0,0,0,0.7)" />
-            : <CheckCircle size={16} color="#34D399" fill="rgba(0,0,0,0.7)" />}
-        </div>
-      )}
-
-      {analysis && !hasPeople && (
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
@@ -77,8 +68,8 @@ export default function MediaGrid({ uploadedFiles, analyzedAssets, isAnalyzing }
   const analysisMap = {};
   analyzedAssets.forEach((a) => { analysisMap[a.id] = a.analysis; });
 
-  const filteredCount = analyzedAssets.filter((a) => a.analysis && !a.analysis.hasPeople).length;
-  const flaggedCount = analyzedAssets.filter((a) => a.analysis && a.analysis.hasPeople).length;
+  const usableCount = analyzedAssets.filter((a) => a.analysis).length;
+  const peopleCount = analyzedAssets.filter((a) => a.analysis?.hasPeople).length;
 
   return (
     <div>
@@ -88,8 +79,12 @@ export default function MediaGrid({ uploadedFiles, analyzedAssets, isAnalyzing }
         </h3>
         {analyzedAssets.length > 0 && (
           <div style={{ display: 'flex', gap: 10, fontSize: 12 }}>
-            <span style={{ color: '#34D399' }}>✓ {filteredCount} usable</span>
-            {flaggedCount > 0 && <span style={{ color: '#F87171' }}>✕ {flaggedCount} flagged</span>}
+            <span style={{ color: '#34D399' }}>✓ {usableCount} analyzed</span>
+            {peopleCount > 0 && (
+              <span style={{ color: '#A78BFA', display: 'flex', alignItems: 'center', gap: 3 }}>
+                <Users size={12} /> {peopleCount} with people
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -104,18 +99,6 @@ export default function MediaGrid({ uploadedFiles, analyzedAssets, isAnalyzing }
           />
         ))}
       </div>
-
-      {flaggedCount > 0 && analyzedAssets.length > 0 && (
-        <div style={{
-          marginTop: 12,
-          background: 'rgba(239,68,68,0.08)',
-          border: '1px solid rgba(239,68,68,0.2)',
-          borderRadius: 10, padding: '10px 14px',
-          fontSize: 12, color: '#FCA5A5',
-        }}>
-          👤🚫 {flaggedCount} file{flaggedCount > 1 ? 's' : ''} skipped — people detected. Upload faceless content to use them.
-        </div>
-      )}
     </div>
   );
 }

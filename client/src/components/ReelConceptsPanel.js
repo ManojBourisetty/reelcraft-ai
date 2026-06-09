@@ -177,8 +177,8 @@ export default function ReelConceptsPanel({
   onSelectConcept,
   onGetCaptions,
   isGeneratingCaptions,
-  filteredCount,
-  flaggedCount,
+  usableCount,
+  peopleCount,
 }) {
   return (
     <div>
@@ -186,9 +186,10 @@ export default function ReelConceptsPanel({
         <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#F1F5F9' }}>
           🎬 Reel Concepts
         </h2>
-        {filteredCount > 0 && (
+        {usableCount > 0 && (
           <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>
-            Based on {filteredCount} usable asset{filteredCount > 1 ? 's' : ''}
+            Based on {usableCount} asset{usableCount > 1 ? 's' : ''}
+            {peopleCount > 0 ? ` (${peopleCount} with people)` : ''}
           </span>
         )}
       </div>

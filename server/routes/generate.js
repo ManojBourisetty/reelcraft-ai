@@ -20,7 +20,7 @@ router.post('/reels', async (req, res) => {
     .map((a, i) => `Asset ${i + 1}: [${a.contentType}] "${a.description}" — Score: ${a.reelScore}/10. Use: ${a.suggestedUse}`)
     .join('\n');
 
-  const prompt = `You are an Instagram reel strategist for a faceless influencer. Given these assets:
+  const prompt = `You are an Instagram reel strategist. Given these assets:
 ${assetList}
 
 Generate 3 distinct reel concepts. Return ONLY a valid JSON array (no markdown) with exactly 3 objects:
@@ -53,7 +53,7 @@ router.post('/captions', async (req, res) => {
   const { concept } = req.body;
   if (!concept) return res.status(400).json({ error: 'No concept provided.' });
 
-  const prompt = `Generate Instagram captions and hashtags for a faceless reel:
+  const prompt = `Generate Instagram captions and hashtags for this reel:
 Title: ${concept.title}
 Mood: ${concept.mood}
 Script: ${concept.script}
@@ -88,7 +88,7 @@ router.post('/niche', async (req, res) => {
 
   const summary = assets.map((a) => `[${a.contentType}] score:${a.reelScore} — ${a.description}`).join('\n');
 
-  const prompt = `Based on these Instagram assets for a faceless influencer:
+  const prompt = `Based on these Instagram assets:
 ${summary}
 
 Return ONLY valid JSON (no markdown):
