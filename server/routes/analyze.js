@@ -1,5 +1,5 @@
 const express = require('express');
-const { getVisionModel } = require('../utils/aiClient');
+const { generateVision, generateText } = require('../utils/aiClient');
 
 const router = express.Router();
 
@@ -19,27 +19,23 @@ function parseJSON(text) {
 }
 
 async function analyzeAsset(file) {
-  const model = getVisionModel();
-
-  // file.base64 is a browser-compressed JPEG base64 string
-  const mimeType = file.mimeType?.startsWith('video/') ? 'image/jpeg' : (file.mimeType || 'image/jpeg');
   const isVideo = file.isVideo;
 
   if (!file.base64) {
-    // Video with no extractable frame — infer from filename
-    const result = await model.generateContent([
+    // Video with no extractable frame — infer from filename (text-only)
+    const text = await generateText(
       `This is a video file named "${file.originalName}". No frame was extractable. Based on the filename, make your best inference. ${ANALYSIS_PROMPT}`
-    ]);
-    return parseJSON(result.response.text());
+    );
+    return parseJSON(text);
   }
 
-  const parts = [
-    { inlineData: { data: file.base64, mimeType: 'image/jpeg' } },
-    { text: isVideo ? `This is a frame extracted from a video file. ${ANALYSIS_PROMPT}` : ANALYSIS_PROMPT },
-  ];
+  // file.base64 is a browser-compressed JPEG (video frames are also JPEG)
+  const prompt = isVideo
+    ? `This is a frame extracted from a video file. ${ANALYSIS_PROMPT}`
+    : ANALYSIS_PROMPT;
 
-  const result = await model.generateContent(parts);
-  return parseJSON(result.response.text());
+  const text = await generateVision({ prompt, base64: file.base64, mimeType: 'image/jpeg' });
+  return parseJSON(text);
 }
 
 router.post('/', async (req, res) => {

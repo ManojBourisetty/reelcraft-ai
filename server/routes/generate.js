@@ -1,5 +1,5 @@
 const express = require('express');
-const { getTextModel } = require('../utils/aiClient');
+const { generateText } = require('../utils/aiClient');
 
 const router = express.Router();
 
@@ -37,9 +37,8 @@ Generate 3 distinct reel concepts. Return ONLY a valid JSON array (no markdown) 
 }]`;
 
   try {
-    const model = getTextModel();
-    const result = await model.generateContent(prompt);
-    const concepts = parseJSON(result.response.text());
+    const text = await generateText(prompt);
+    const concepts = parseJSON(text);
     res.json({ concepts });
   } catch (err) {
     console.error('[generate/reels]', err.message);
@@ -71,9 +70,8 @@ Return ONLY valid JSON (no markdown):
 }`;
 
   try {
-    const model = getTextModel();
-    const result = await model.generateContent(prompt);
-    res.json(parseJSON(result.response.text()));
+    const text = await generateText(prompt);
+    res.json(parseJSON(text));
   } catch (err) {
     console.error('[generate/captions]', err.message);
     res.status(500).json({ error: err.message });
@@ -101,9 +99,8 @@ Return ONLY valid JSON (no markdown):
 }`;
 
   try {
-    const model = getTextModel();
-    const result = await model.generateContent(prompt);
-    res.json(parseJSON(result.response.text()));
+    const text = await generateText(prompt);
+    res.json(parseJSON(text));
   } catch (err) {
     console.error('[generate/niche]', err.message);
     res.status(500).json({ error: err.message });

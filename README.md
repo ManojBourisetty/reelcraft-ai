@@ -1,11 +1,11 @@
 # ReelCraft AI
 
-AI-powered Instagram content creation assistant. Upload your media → Gemini AI analyzes it, scores each asset for reel potential, then generates reel concepts, captions, hashtags, and a production checklist.
+AI-powered Instagram content creation assistant. Upload your media → AI analyzes it, scores each asset for reel potential, then generates reel concepts, captions, hashtags, and a production checklist.
 
 ## Prerequisites
 
 - Node.js 18+
-- A **free** Google AI Studio API key — [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) (no credit card required)
+- A **free** Groq API key — [console.groq.com/keys](https://console.groq.com/keys) (no credit card required)
 
 ## Setup
 
@@ -27,7 +27,7 @@ cp .env.example .env
 ```
 
 ```
-GOOGLE_AI_API_KEY=your_key_here
+GROQ_API_KEY=your_key_here
 PORT=3001
 ```
 
@@ -55,7 +55,7 @@ Open [http://localhost:3000](http://localhost:3000).
 |-------|------|
 | Frontend | React, Tailwind CSS |
 | Backend | Node.js, Express |
-| AI | Google Gemini 2.0 Flash (free tier — configurable via `GEMINI_MODEL`) |
+| AI | Groq — Llama 4 Scout (vision) + Llama 3.3 70B (text), free tier, OpenAI-compatible |
 | Image processing | Browser Canvas API (client-side, no server storage) |
 | Deployment | Vercel (serverless) |
 
@@ -73,10 +73,10 @@ reelcraft-ai/
 │           └── mediaProcessor.js  # Client-side Canvas compression + video frame extraction
 ├── server/
 │   ├── routes/
-│   │   ├── analyze.js       # Gemini Vision — content scoring + people detection (informational)
+│   │   ├── analyze.js       # Vision — content scoring + people detection (informational)
 │   │   └── generate.js      # Reel concepts, captions, niche detection
 │   ├── utils/
-│   │   └── aiClient.js      # Gemini SDK singleton
+│   │   └── aiClient.js      # Groq (OpenAI-compatible) client — vision + text
 │   └── index.js
 ├── vercel.json
 └── .env.example
@@ -86,11 +86,11 @@ reelcraft-ai/
 
 1. Push to GitHub (already done if you cloned this)
 2. Go to [vercel.com/new](https://vercel.com/new) → Import this repo
-3. Add environment variable: `GOOGLE_AI_API_KEY=your_key_here`
+3. Add environment variable: `GROQ_API_KEY=your_key_here`
 4. Deploy — Vercel builds the React client and runs Express as a serverless function
 
 ## Notes
 
 - No server-side file storage — images are compressed to JPEG via Canvas API in the browser before being sent to the backend, keeping request sizes small and the app fully stateless
-- Free Gemini tier resets daily; for higher volume upgrade to a paid Google AI Studio plan
+- Groq's free tier is rate-limited per minute/day; for higher volume add a paid Groq plan or override the models via `GROQ_VISION_MODEL` / `GROQ_TEXT_MODEL`
 - Videos: first frame is extracted client-side via an in-browser `<video>` element + canvas
