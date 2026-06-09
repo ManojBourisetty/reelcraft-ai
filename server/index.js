@@ -26,7 +26,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use('/api/analyze', analyzeRouter);
 app.use('/api/generate', generateRouter);
 
-app.get('/api/health', (_, res) => res.json({ status: 'ok', model: 'gemini-1.5-flash' }));
+app.get('/api/health', (_, res) => res.json({ status: 'ok', model: process.env.GEMINI_MODEL || 'gemini-2.0-flash' }));
 
 app.use((err, req, res, _next) => {
   console.error('[Error]', err.message);
@@ -39,5 +39,5 @@ module.exports = app;
 // Start local server only when not imported by Vercel
 if (require.main === module) {
   const PORT = process.env.PORT || 3001;
-  app.listen(PORT, () => console.log(`ReelCraft AI server on :${PORT} (Gemini 1.5 Flash)`));
+  app.listen(PORT, () => console.log(`ReelCraft AI server on :${PORT} (${process.env.GEMINI_MODEL || 'gemini-2.0-flash'})`));
 }

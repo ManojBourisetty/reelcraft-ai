@@ -55,7 +55,7 @@ Open [http://localhost:3000](http://localhost:3000).
 |-------|------|
 | Frontend | React, Tailwind CSS |
 | Backend | Node.js, Express |
-| AI | Google Gemini 1.5 Flash (free tier — 15 RPM, 1M tokens/day) |
+| AI | Google Gemini 2.0 Flash (free tier — configurable via `GEMINI_MODEL`) |
 | Image processing | Browser Canvas API (client-side, no server storage) |
 | Deployment | Vercel (serverless) |
 
