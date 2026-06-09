@@ -13,12 +13,16 @@ function getClient() {
   return genAI;
 }
 
+// gemini-1.5-flash was retired by Google; gemini-2.0-flash is the current
+// free-tier vision+text model supported by the v1beta API.
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+
 function getVisionModel() {
-  return getClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+  return getClient().getGenerativeModel({ model: MODEL });
 }
 
 function getTextModel() {
-  return getClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+  return getClient().getGenerativeModel({ model: MODEL });
 }
 
 module.exports = { getVisionModel, getTextModel };

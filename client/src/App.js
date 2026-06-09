@@ -58,7 +58,12 @@ export default function App() {
       const usable = results.filter((r) => r.analysis);
 
       if (usable.length === 0) {
-        setError('Analysis failed for all uploaded media. Please try again.');
+        const firstError = results.find((r) => r.error)?.error;
+        setError(
+          firstError
+            ? `Analysis failed: ${firstError}`
+            : 'Analysis failed for all uploaded media. Please try again.'
+        );
         setIsAnalyzing(false);
         setAnalysisStep('');
         return;
