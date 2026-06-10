@@ -20,8 +20,8 @@ export async function analyzeMedia(files, onProgress) {
   return { results };
 }
 
-export async function generateReels(assets) {
-  const { data } = await axios.post(`${BASE}/generate/reels`, { assets });
+export async function generateReels(assets, length = 'medium') {
+  const { data } = await axios.post(`${BASE}/generate/reels`, { assets, length });
   return data;
 }
 

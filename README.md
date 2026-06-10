@@ -45,7 +45,7 @@ Open [http://localhost:3000](http://localhost:3000).
 1. **Upload** — drag-and-drop as many photos (JPG/PNG/WEBP/HEIC) or videos (MP4/MOV/WEBM/M4V) as you like (processed locally in your browser); the AI ranks them and picks the best for your reel
 2. **Analyze** — click "Analyze My Media" in the top bar
 3. **Review** — each asset shows a reel-score badge (1–10) and content type; assets containing people get a small badge for reference
-4. **Reel Concepts** — 3 AI-generated concepts appear in the right panel; expand any to see clip order, script, and music suggestions
+4. **Reel Concepts** — 3 AI-generated concepts appear in the right panel; pick a length (Short ~15s / Medium ~30s / Long ~60s) to regenerate at that target, and expand any concept to see clip order, script, and music suggestions
 5. **Captions** — click "Generate Captions & Hashtags" on a concept; a bottom drawer opens with 3 caption styles + 30 hashtags
 6. **Create Reel Video** — click "Create Reel Video (9:16)" on a concept to stitch your uploaded clips (in the AI's clip order) into a vertical MP4, rendered entirely in your browser, then download it
 7. **Export** — copy to clipboard or download the full production brief as a `.txt` file

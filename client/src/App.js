@@ -15,7 +15,7 @@ import { renderReel, buildClips } from './lib/videoRenderer';
 
 // Cap how many top-ranked assets are fed to the reel/niche models so large
 // uploads don't blow the prompt budget. The grid still shows everything.
-const REEL_MAX_ASSETS = 20;
+const REEL_MAX_ASSETS = 30;
 
 export default function App() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -24,6 +24,7 @@ export default function App() {
   // a fixed order so reel clipOrder indices map back to the right source files.
   const [rankedAssets, setRankedAssets] = useState([]);
   const [reelConcepts, setReelConcepts] = useState([]);
+  const [reelLength, setReelLength] = useState('medium'); // 'short' | 'medium' | 'long'
   const [nicheData, setNicheData] = useState(null);
   const [captionData, setCaptionData] = useState(null);
   const [activeConcept, setActiveConcept] = useState(null);
@@ -106,7 +107,7 @@ export default function App() {
       setAnalysisStep('Generating reel concepts...');
       setIsGeneratingReels(true);
       const rankedAnalyses = ranked.map((r) => r.analysis);
-      const { concepts } = await generateReels(rankedAnalyses);
+      const { concepts } = await generateReels(rankedAnalyses, reelLength);
       setReelConcepts(concepts);
       setActiveConcept(concepts[0]);
       setIsGeneratingReels(false);
@@ -124,7 +125,25 @@ export default function App() {
       setIsGeneratingReels(false);
       setAnalysisStep('');
     }
-  }, [uploadedFiles]);
+  }, [uploadedFiles, reelLength]);
+
+  // Re-generate reel concepts at a different length without re-analyzing.
+  const handleChangeLength = useCallback(async (length) => {
+    setReelLength(length);
+    if (rankedAssets.length === 0 || isGeneratingReels) return;
+
+    setError(null);
+    setIsGeneratingReels(true);
+    try {
+      const { concepts } = await generateReels(rankedAssets.map((r) => r.analysis), length);
+      setReelConcepts(concepts);
+      setActiveConcept(concepts[0]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsGeneratingReels(false);
+    }
+  }, [rankedAssets, isGeneratingReels]);
 
   const handleGetCaptions = useCallback(async (concept) => {
     setError(null);
@@ -221,6 +240,8 @@ export default function App() {
                   isGeneratingCaptions={isGeneratingCaptions}
                   onCreateReel={handleCreateReel}
                   isRendering={renderState?.status === 'rendering'}
+                  reelLength={reelLength}
+                  onChangeLength={handleChangeLength}
                   usableCount={rankedAssets.length}
                   peopleCount={peopleCount}
                 />

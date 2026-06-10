@@ -10,11 +10,20 @@ function parseJSON(text) {
 
 // ── Reel Concepts ────────────────────────────────────────────────────────────
 
+// Reel length presets — target duration + clip count guidance for the model.
+const LENGTH_PRESETS = {
+  short: { label: 'short', seconds: '12–20 seconds', clips: '3–5 clips' },
+  medium: { label: 'medium', seconds: '25–40 seconds', clips: '6–10 clips' },
+  long: { label: 'long', seconds: '50–75 seconds', clips: '12–20 clips' },
+};
+
 router.post('/reels', async (req, res) => {
-  const { assets } = req.body;
+  const { assets, length } = req.body;
   if (!assets || assets.length === 0) {
     return res.status(400).json({ error: 'No assets provided.' });
   }
+
+  const preset = LENGTH_PRESETS[length] || LENGTH_PRESETS.medium;
 
   const assetList = assets
     .map((a, i) => `Asset ${i + 1}: [${a.contentType}] "${a.description}" — Score: ${a.reelScore}/10. Use: ${a.suggestedUse}`)
@@ -23,7 +32,7 @@ router.post('/reels', async (req, res) => {
   const prompt = `You are an Instagram reel strategist. These assets are pre-ranked by reel-score (higher = stronger):
 ${assetList}
 
-You do NOT need to use every asset. For each concept, SELECT the strongest, most cohesive assets (favor higher scores) and arrange them into a tight, scroll-stopping reel — a focused 5–8 clip reel usually outperforms one that crams everything in. Reference assets by their "Asset N" number in clipOrder using the "clip" field.
+Target a ${preset.label} reel: about ${preset.seconds} long, roughly ${preset.clips}. SELECT the strongest, most cohesive assets (favor higher scores) and arrange them to fit this length — you may repeat a strong asset if needed to reach the target, and you do not need to use weak assets just to fill time. Reference assets by their "Asset N" number in clipOrder using the "clip" field, and make the "duration" field reflect the ${preset.label} target.
 
 Generate 3 distinct reel concepts. Return ONLY a valid JSON array (no markdown) with exactly 3 objects:
 [{

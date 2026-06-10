@@ -199,6 +199,45 @@ function ConceptCard({ concept, isActive, onSelect, onGetCaptions, isGeneratingC
   );
 }
 
+const LENGTH_OPTIONS = [
+  { value: 'short', label: 'Short', hint: '~15s' },
+  { value: 'medium', label: 'Medium', hint: '~30s' },
+  { value: 'long', label: 'Long', hint: '~60s' },
+];
+
+function LengthSelector({ value, onChange, disabled }) {
+  return (
+    <div style={{ display: 'flex', gap: 4, background: 'var(--color-card)', padding: 4, borderRadius: 10, marginBottom: 14 }}>
+      {LENGTH_OPTIONS.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            onClick={() => !disabled && onChange(opt.value)}
+            disabled={disabled}
+            style={{
+              flex: 1,
+              border: 'none',
+              borderRadius: 7,
+              padding: '7px 6px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              color: active ? '#fff' : 'var(--color-muted)',
+              background: active ? 'linear-gradient(135deg, #7C3AED, #EC4899)' : 'transparent',
+              opacity: disabled && !active ? 0.5 : 1,
+              transition: 'all 0.15s',
+            }}
+            title={`${opt.label} reel (${opt.hint})`}
+          >
+            {opt.label} <span style={{ opacity: 0.8, fontWeight: 400 }}>{opt.hint}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ReelConceptsPanel({
   concepts,
   isLoading,
@@ -208,6 +247,8 @@ export default function ReelConceptsPanel({
   isGeneratingCaptions,
   onCreateReel,
   isRendering,
+  reelLength,
+  onChangeLength,
   usableCount,
   peopleCount,
 }) {
@@ -224,6 +265,10 @@ export default function ReelConceptsPanel({
           </span>
         )}
       </div>
+
+      {onChangeLength && (
+        <LengthSelector value={reelLength} onChange={onChangeLength} disabled={isLoading} />
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {isLoading
