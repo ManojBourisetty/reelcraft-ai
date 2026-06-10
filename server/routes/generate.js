@@ -17,50 +17,41 @@ const LENGTH_PRESETS = {
   long: { label: 'long', seconds: '50–75 seconds', clips: '12–20 clips', minClips: 12 },
 };
 
-// Ensure clipOrder doesn't repeat assets unnecessarily. The model is allowed
-// to reuse a strong asset only when there are fewer assets than clips; when
-// there are enough unique assets, reassign duplicate/invalid clip references
-// to assets that haven't been used yet.
+// Ensure clipOrder never repeats an asset, even if clips outnumber assets.
+// Each asset may appear at most once across clipOrder; if the model returns
+// a duplicate or out-of-range clip reference, reassign it to an unused asset
+// when one is available, otherwise drop that clip entirely (a shorter reel
+// beats a repeated clip).
 function dedupeClipOrder(clipOrder, assetCount) {
   if (!Array.isArray(clipOrder) || assetCount === 0) return clipOrder;
 
-  const used = [];
   const usedSet = new Set();
   const unused = [];
   for (let i = 1; i <= assetCount; i++) unused.push(i);
 
-  // Round-robin cursor for the "clips outnumber assets" overflow case, so
-  // repeats cycle through every used asset instead of collapsing onto one.
-  let repeatCursor = 0;
-
-  return clipOrder.map((entry) => {
+  const result = [];
+  for (const entry of clipOrder) {
     const clip = entry.clip;
     const isValidUnused = clip >= 1 && clip <= assetCount && !usedSet.has(clip);
 
     if (isValidUnused) {
       usedSet.add(clip);
-      used.push(clip);
       unused.splice(unused.indexOf(clip), 1);
-      return entry;
+      result.push(entry);
+      continue;
     }
 
     if (unused.length > 0) {
       const next = unused.shift();
       usedSet.add(next);
-      used.push(next);
-      return { ...entry, clip: next };
+      result.push({ ...entry, clip: next });
+      continue;
     }
 
-    // No unused assets left — only happens when clips outnumber assets.
-    // Reuse the AI's own choice if it's a valid in-range asset (even if
-    // already used), otherwise cycle through previously-used assets so
-    // overflow clips don't all collapse onto the same single asset.
-    if (clip >= 1 && clip <= assetCount) return entry;
+    // No unused assets left — drop this clip rather than repeat one.
+  }
 
-    const fallback = used[repeatCursor % used.length] || 1;
-    repeatCursor += 1;
-    return { ...entry, clip: fallback };
-  });
+  return result;
 }
 
 router.post('/reels', async (req, res) => {
@@ -77,7 +68,7 @@ router.post('/reels', async (req, res) => {
 
   const repeatGuidance = assets.length >= preset.minClips
     ? `There are ${assets.length} assets available — that's enough to cover a ${preset.label} reel without repeats. Use each asset at most once across clipOrder.`
-    : `There are only ${assets.length} assets available, fewer than the ${preset.clips} target for a ${preset.label} reel — repeat the strongest assets as needed to reach the target length, but spread repeats across different assets rather than reusing the same one repeatedly.`;
+    : `There are only ${assets.length} assets available, fewer than the ${preset.clips} target for a ${preset.label} reel. Use each asset at most once across clipOrder (no repeats) — the reel will simply be shorter than the ${preset.label} target, using all ${assets.length} assets.`;
 
   const prompt = `You are an Instagram reel strategist. These assets are pre-ranked by reel-score (higher = stronger):
 ${assetList}
