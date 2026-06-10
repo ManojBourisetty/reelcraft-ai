@@ -94,3 +94,17 @@ reelcraft-ai/
 - No server-side file storage — images are compressed to JPEG via Canvas API in the browser before being sent to the backend, keeping request sizes small and the app fully stateless
 - Groq's free tier is rate-limited per minute/day; for higher volume add a paid Groq plan or override the models via `GROQ_VISION_MODEL` / `GROQ_TEXT_MODEL`
 - Videos: first frame is extracted client-side via an in-browser `<video>` element + canvas
+
+## Troubleshooting
+
+### `DeprecationWarning: fs.F_OK is deprecated` during build/dev
+
+Harmless — safe to ignore. It comes from `react-scripts` (Create React App), not this app's code. On newer Node versions (18+/20+/24) CRA's tooling still calls the legacy `fs.F_OK` form. The build and app are unaffected (`Compiled successfully` prints right after it).
+
+To silence it locally:
+
+```bash
+NODE_OPTIONS=--no-deprecation npm run dev
+```
+
+The only permanent fix is migrating off the unmaintained CRA tooling (e.g. to Vite), which is out of scope for this project.
