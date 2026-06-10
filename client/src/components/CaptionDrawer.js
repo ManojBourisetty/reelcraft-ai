@@ -128,29 +128,10 @@ export default function CaptionDrawer({ data, concept, isLoading, onClose }) {
   ];
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      zIndex: 200,
-      background: 'var(--color-surface)',
-      borderTop: '1px solid var(--color-border)',
-      maxHeight: '60vh',
-      display: 'flex',
-      flexDirection: 'column',
-      boxShadow: '0 -20px 60px rgba(0,0,0,0.5)',
-    }}>
+    <div className="caption-drawer">
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '14px 20px',
-        borderBottom: '1px solid var(--color-border)',
-        flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="caption-drawer-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#F1F5F9' }}>
             📝 Captions & Assets
           </h3>
@@ -184,7 +165,7 @@ export default function CaptionDrawer({ data, concept, isLoading, onClose }) {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0, padding: '0 20px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 0, padding: '0 20px', borderBottom: '1px solid var(--color-border)', flexShrink: 0, overflowX: 'auto' }}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -198,6 +179,7 @@ export default function CaptionDrawer({ data, concept, isLoading, onClose }) {
               cursor: 'pointer',
               fontSize: 13,
               fontWeight: 600,
+              whiteSpace: 'nowrap',
               transition: 'all 0.2s',
             }}
           >
@@ -207,7 +189,7 @@ export default function CaptionDrawer({ data, concept, isLoading, onClose }) {
       </div>
 
       {/* Body */}
-      <div style={{ overflowY: 'auto', padding: 20, flex: 1 }}>
+      <div className="caption-drawer-body">
 
         {activeTab === 'captions' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

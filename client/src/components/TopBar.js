@@ -9,15 +9,7 @@ export default function TopBar({ onAnalyze, isWorking, hasFiles, step }) {
       top: 0,
       zIndex: 100,
     }}>
-      <div style={{
-        maxWidth: 1400,
-        margin: '0 auto',
-        padding: '0 20px',
-        height: 64,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
+      <div className="topbar-inner">
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
@@ -29,6 +21,7 @@ export default function TopBar({ onAnalyze, isWorking, hasFiles, step }) {
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 18,
+            flexShrink: 0,
           }}>🎬</div>
           <div>
             <span className="gradient-text" style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.3px' }}>
@@ -39,14 +32,15 @@ export default function TopBar({ onAnalyze, isWorking, hasFiles, step }) {
         </div>
 
         {/* Status + CTA */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="topbar-actions">
           {isWorking && step && (
-            <span style={{ fontSize: 13, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Loader size={13} style={{ animation: 'spin 1s linear infinite' }} />
+            <span className="topbar-step">
+              <Loader size={13} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
               {step}
             </span>
           )}
           <button
+            className="topbar-cta"
             onClick={onAnalyze}
             disabled={isWorking || !hasFiles}
             style={{
@@ -63,6 +57,7 @@ export default function TopBar({ onAnalyze, isWorking, hasFiles, step }) {
               display: 'flex',
               alignItems: 'center',
               gap: 8,
+              whiteSpace: 'nowrap',
               transition: 'opacity 0.2s',
             }}
           >

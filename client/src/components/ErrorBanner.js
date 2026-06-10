@@ -14,10 +14,11 @@ export default function ErrorBanner({ message, onDismiss, onRetry, variant = 'er
       padding: '12px 20px',
       display: 'flex',
       alignItems: 'center',
+      flexWrap: 'wrap',
       gap: 10,
     }}>
       <AlertTriangle size={16} color={c.icon} flexShrink={0} />
-      <span style={{ flex: 1, fontSize: 13, color: c.text }}>{message}</span>
+      <span style={{ flex: '1 1 200px', fontSize: 13, color: c.text }}>{message}</span>
       <div style={{ display: 'flex', gap: 8 }}>
         {onRetry && (
           <button onClick={onRetry} style={{

@@ -254,7 +254,7 @@ export default function ReelConceptsPanel({
 }) {
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div className="wrap-row" style={{ marginBottom: 14 }}>
         <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#F1F5F9' }}>
           🎬 Reel Concepts
         </h2>

@@ -67,7 +67,7 @@ export default function NichePanel({ data }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 12 }}>
+      <div className="stat-row">
         <div style={{
           flex: 1,
           background: 'rgba(124,58,237,0.08)',

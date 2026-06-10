@@ -73,12 +73,12 @@ export default function MediaGrid({ uploadedFiles, analyzedAssets, isAnalyzing }
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <div className="wrap-row" style={{ marginBottom: 12 }}>
         <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#E2E8F0' }}>
           Media ({uploadedFiles.length})
         </h3>
         {analyzedAssets.length > 0 && (
-          <div style={{ display: 'flex', gap: 10, fontSize: 12 }}>
+          <div style={{ display: 'flex', gap: 10, fontSize: 12, flexWrap: 'wrap' }}>
             <span style={{ color: '#34D399' }}>✓ {usableCount} analyzed</span>
             {peopleCount > 0 && (
               <span style={{ color: '#A78BFA', display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -89,7 +89,7 @@ export default function MediaGrid({ uploadedFiles, analyzedAssets, isAnalyzing }
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 8 }}>
+      <div className="media-grid">
         {uploadedFiles.map((file) => (
           <MediaThumbnail
             key={file.id}
