@@ -19,7 +19,24 @@ function drawToCanvas(source, naturalWidth, naturalHeight) {
   return canvas;
 }
 
-export function compressImage(file) {
+function isHeic(file) {
+  return /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
+}
+
+/**
+ * iPhone photos are HEIC. Safari decodes it natively, but desktop Chrome/Firefox
+ * cannot — so convert to JPEG first (heic2any is lazy-loaded to keep the bundle small).
+ */
+async function toDecodableImage(file) {
+  if (!isHeic(file)) return file;
+  const { default: heic2any } = await import('heic2any');
+  const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+  const blob = Array.isArray(out) ? out[0] : out;
+  return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+}
+
+export async function compressImage(rawFile) {
+  const file = await toDecodableImage(rawFile);
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
