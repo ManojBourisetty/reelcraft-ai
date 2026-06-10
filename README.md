@@ -47,7 +47,8 @@ Open [http://localhost:3000](http://localhost:3000).
 3. **Review** — each asset shows a reel-score badge (1–10) and content type; assets containing people get a small badge for reference
 4. **Reel Concepts** — 3 AI-generated concepts appear in the right panel; expand any to see clip order, script, and music suggestions
 5. **Captions** — click "Generate Captions & Hashtags" on a concept; a bottom drawer opens with 3 caption styles + 30 hashtags
-6. **Export** — copy to clipboard or download the full production brief as a `.txt` file
+6. **Create Reel Video** — click "Create Reel Video (9:16)" on a concept to stitch your uploaded clips (in the AI's clip order) into a vertical MP4, rendered entirely in your browser, then download it
+7. **Export** — copy to clipboard or download the full production brief as a `.txt` file
 
 ## Tech Stack
 
@@ -57,6 +58,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | Backend | Node.js, Express |
 | AI | Groq — Llama 4 Scout (vision) + Llama 3.3 70B (text), free tier, OpenAI-compatible |
 | Image processing | Browser Canvas API (client-side, no server storage) |
+| Video rendering | FFmpeg.wasm (in-browser, no upload, no watermark) |
 | Deployment | Vercel (serverless) |
 
 ## Project Structure
@@ -70,7 +72,8 @@ reelcraft-ai/
 │       ├── components/      # TopBar, UploadZone, MediaGrid, ReelConceptsPanel, CaptionDrawer, NichePanel
 │       └── lib/
 │           ├── api.js        # Axios wrappers
-│           └── mediaProcessor.js  # Client-side Canvas compression + video frame extraction
+│           ├── mediaProcessor.js  # Client-side Canvas compression + video frame extraction
+│           └── videoRenderer.js   # FFmpeg.wasm reel assembly (9:16 MP4, in-browser)
 ├── server/
 │   ├── routes/
 │   │   ├── analyze.js       # Vision — content scoring + people detection (informational)
@@ -94,6 +97,8 @@ reelcraft-ai/
 - No server-side file storage — images are compressed to JPEG via Canvas API in the browser before being sent to the backend, keeping request sizes small and the app fully stateless
 - Groq's free tier is rate-limited per minute/day; for higher volume add a paid Groq plan or override the models via `GROQ_VISION_MODEL` / `GROQ_TEXT_MODEL`
 - Videos: first frame is extracted client-side via an in-browser `<video>` element + canvas
+- Reel rendering runs locally via FFmpeg.wasm — your original media never leaves the browser. The ~25MB WASM core downloads once per session on first render (from the jsDelivr/unpkg CDN), then is cached
+- v1 reel output is video-only (clips stitched in the AI's order, scaled/cropped to 1080×1920). Background music and burned-in text overlays are not included yet
 
 ## Troubleshooting
 

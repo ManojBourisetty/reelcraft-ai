@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Music, Clock, Zap, Film, ChevronRight, Loader } from 'lucide-react';
+import { Music, Clock, Zap, Film, ChevronRight, Loader, Video } from 'lucide-react';
 
 function SkeletonCard() {
   return (
@@ -52,7 +52,7 @@ function ClipOrderList({ clips }) {
   );
 }
 
-function ConceptCard({ concept, isActive, onSelect, onGetCaptions, isGeneratingCaptions }) {
+function ConceptCard({ concept, isActive, onSelect, onGetCaptions, isGeneratingCaptions, onCreateReel, isRendering }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -164,6 +164,34 @@ function ConceptCard({ concept, isActive, onSelect, onGetCaptions, isGeneratingC
               : <><Zap size={13} /> Generate Captions & Hashtags</>
             }
           </button>
+
+          <button
+            onClick={() => onCreateReel(concept)}
+            disabled={isRendering}
+            style={{
+              marginTop: 10,
+              width: '100%',
+              background: 'transparent',
+              color: '#A78BFA',
+              border: '1px solid rgba(124,58,237,0.5)',
+              borderRadius: 10,
+              padding: '10px',
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: isRendering ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              opacity: isRendering ? 0.6 : 1,
+            }}
+            title="Stitch your clips into a 9:16 vertical MP4 — rendered in your browser"
+          >
+            {isRendering
+              ? <><Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> Rendering Reel...</>
+              : <><Video size={13} /> Create Reel Video (9:16)</>
+            }
+          </button>
         </div>
       )}
     </div>
@@ -177,6 +205,8 @@ export default function ReelConceptsPanel({
   onSelectConcept,
   onGetCaptions,
   isGeneratingCaptions,
+  onCreateReel,
+  isRendering,
   usableCount,
   peopleCount,
 }) {
@@ -205,6 +235,8 @@ export default function ReelConceptsPanel({
                 onSelect={() => onSelectConcept(concept)}
                 onGetCaptions={() => onGetCaptions(concept)}
                 isGeneratingCaptions={isGeneratingCaptions}
+                onCreateReel={onCreateReel}
+                isRendering={isRendering}
               />
             ))
         }

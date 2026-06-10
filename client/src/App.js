@@ -1,6 +1,6 @@
 import './App.css';
 import './index.css';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import TopBar from './components/TopBar';
 import UploadZone from './components/UploadZone';
 import MediaGrid from './components/MediaGrid';
@@ -9,7 +9,9 @@ import CaptionDrawer from './components/CaptionDrawer';
 import NichePanel from './components/NichePanel';
 import EmptyState from './components/EmptyState';
 import ErrorBanner from './components/ErrorBanner';
+import ReelRenderModal from './components/ReelRenderModal';
 import { analyzeMedia, generateReels, generateCaptions, detectNiche } from './lib/api';
+import { renderReel, buildClips } from './lib/videoRenderer';
 
 export default function App() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -27,8 +29,20 @@ export default function App() {
   const [error, setError] = useState(null);
   const [analysisStep, setAnalysisStep] = useState('');
 
+  // Original File objects kept in-browser only (never sent to backend) for rendering.
+  const originalFilesRef = useRef({});
+  const [renderState, setRenderState] = useState(null);
+
   const handleFilesReady = useCallback((files) => {
-    setUploadedFiles(files);
+    // Split the heavy original File off the descriptor so it stays client-side.
+    const originals = {};
+    const descriptors = files.map(({ file, ...rest }) => {
+      originals[rest.id] = file;
+      return rest;
+    });
+    originalFilesRef.current = originals;
+
+    setUploadedFiles(descriptors);
     setAnalyzedAssets([]);
     setReelConcepts([]);
     setNicheData(null);
@@ -111,6 +125,37 @@ export default function App() {
   const usableAssets = analyzedAssets.filter((a) => a.analysis);
   const peopleCount = analyzedAssets.filter((a) => a.analysis?.hasPeople).length;
 
+  const handleCreateReel = useCallback(async (concept) => {
+    const clips = buildClips(concept, usableAssets, originalFilesRef.current);
+    if (clips.length === 0) {
+      setRenderState({
+        status: 'error',
+        error: 'No source clips available. Re-upload your media, then analyze and try again.',
+        title: concept?.title,
+      });
+      return;
+    }
+
+    setRenderState({ status: 'rendering', step: 'Preparing…', ratio: null, title: concept?.title });
+
+    try {
+      const blob = await renderReel(clips, (step, ratio) => {
+        setRenderState((prev) => (prev ? { ...prev, step, ratio } : prev));
+      });
+      const videoUrl = URL.createObjectURL(blob);
+      setRenderState({ status: 'done', videoUrl, title: concept?.title });
+    } catch (err) {
+      setRenderState({ status: 'error', error: err.message, title: concept?.title });
+    }
+  }, [usableAssets]);
+
+  const handleCloseRender = useCallback(() => {
+    setRenderState((prev) => {
+      if (prev?.videoUrl) URL.revokeObjectURL(prev.videoUrl);
+      return null;
+    });
+  }, []);
+
   return (
     <div style={{ background: 'var(--color-dark)', minHeight: '100vh' }}>
       <TopBar
@@ -155,6 +200,8 @@ export default function App() {
                   onSelectConcept={setActiveConcept}
                   onGetCaptions={handleGetCaptions}
                   isGeneratingCaptions={isGeneratingCaptions}
+                  onCreateReel={handleCreateReel}
+                  isRendering={renderState?.status === 'rendering'}
                   usableCount={usableAssets.length}
                   peopleCount={peopleCount}
                 />
@@ -186,6 +233,8 @@ export default function App() {
           onClose={() => setCaptionData(null)}
         />
       )}
+
+      <ReelRenderModal state={renderState} onClose={handleCloseRender} />
     </div>
   );
 }

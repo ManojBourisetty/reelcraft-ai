@@ -104,5 +104,8 @@ export async function processFile(file, id) {
     isVideo,
     base64,
     thumbnailUrl,
+    // Original File kept in-browser only (for client-side reel rendering).
+    // Stripped out before anything is sent to the backend.
+    file,
   };
 }
