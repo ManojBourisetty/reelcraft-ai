@@ -35,6 +35,7 @@ export default function App() {
   const [isDetectingNiche, setIsDetectingNiche] = useState(false);
 
   const [error, setError] = useState(null);
+  const [analysisWarning, setAnalysisWarning] = useState(null);
   const [analysisStep, setAnalysisStep] = useState('');
 
   // Original File objects kept in-browser only (never sent to backend) for rendering.
@@ -67,6 +68,7 @@ export default function App() {
     }
 
     setError(null);
+    setAnalysisWarning(null);
     setIsAnalyzing(true);
     setAnalyzedAssets([]);
     setRankedAssets([]);
@@ -96,28 +98,15 @@ export default function App() {
         return;
       }
 
-      // Rank by AI reel-score (desc) and take the strongest assets. The model
-      // then picks/orders the best of these into clips; the same ordered list
-      // backs reel rendering so clip indices resolve to the right files.
-      const ranked = [...usable]
-        .sort((a, b) => (b.analysis.reelScore || 0) - (a.analysis.reelScore || 0))
-        .slice(0, REEL_MAX_ASSETS);
-      setRankedAssets(ranked);
+      if (usable.length < results.length) {
+        const failedCount = results.length - usable.length;
+        setAnalysisWarning(
+          `${failedCount} of ${results.length} files couldn't be analyzed (likely a temporary AI rate limit). ` +
+          `Reels were generated from the ${usable.length} that succeeded — click Retry to try the rest again.`
+        );
+      }
 
-      setAnalysisStep('Generating reel concepts...');
-      setIsGeneratingReels(true);
-      const rankedAnalyses = ranked.map((r) => r.analysis);
-      const { concepts } = await generateReels(rankedAnalyses, reelLength);
-      setReelConcepts(concepts);
-      setActiveConcept(concepts[0]);
-      setIsGeneratingReels(false);
-
-      setAnalysisStep('Detecting your niche...');
-      setIsDetectingNiche(true);
-      const niche = await detectNiche(rankedAnalyses);
-      setNicheData(niche);
-      setIsDetectingNiche(false);
-
+      await generateConceptsAndNiche(usable);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -125,7 +114,82 @@ export default function App() {
       setIsGeneratingReels(false);
       setAnalysisStep('');
     }
-  }, [uploadedFiles, reelLength]);
+  }, [uploadedFiles, reelLength]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Shared by initial analysis and retry: rank usable assets, then generate
+  // reel concepts and detect the niche from that ranked list.
+  const generateConceptsAndNiche = useCallback(async (usable) => {
+    // Rank by AI reel-score (desc) and take the strongest assets. The model
+    // then picks/orders the best of these into clips; the same ordered list
+    // backs reel rendering so clip indices resolve to the right files.
+    const ranked = [...usable]
+      .sort((a, b) => (b.analysis.reelScore || 0) - (a.analysis.reelScore || 0))
+      .slice(0, REEL_MAX_ASSETS);
+    setRankedAssets(ranked);
+
+    setAnalysisStep('Generating reel concepts...');
+    setIsGeneratingReels(true);
+    const rankedAnalyses = ranked.map((r) => r.analysis);
+    const { concepts } = await generateReels(rankedAnalyses, reelLength);
+    setReelConcepts(concepts);
+    setActiveConcept(concepts[0]);
+    setIsGeneratingReels(false);
+
+    setAnalysisStep('Detecting your niche...');
+    setIsDetectingNiche(true);
+    const niche = await detectNiche(rankedAnalyses);
+    setNicheData(niche);
+    setIsDetectingNiche(false);
+  }, [reelLength]);
+
+  // Re-analyze only the files that failed last time (e.g. due to a transient
+  // Groq rate limit), merge them into the existing results, and regenerate
+  // reel concepts + niche from the combined set.
+  const handleRetryFailed = useCallback(async () => {
+    const failedIndices = analyzedAssets
+      .map((r, i) => (r.analysis ? -1 : i))
+      .filter((i) => i !== -1);
+
+    if (failedIndices.length === 0) {
+      setAnalysisWarning(null);
+      return;
+    }
+
+    setError(null);
+    setIsAnalyzing(true);
+    setAnalysisStep(`Retrying ${failedIndices.length} file(s)…`);
+
+    try {
+      const filesToRetry = failedIndices.map((i) => uploadedFiles[i]);
+      const { results: retryResults } = await analyzeMedia(filesToRetry, (done, t) => {
+        setAnalysisStep(`Retrying ${done}/${t}…`);
+      });
+
+      const merged = [...analyzedAssets];
+      failedIndices.forEach((origIndex, j) => {
+        merged[origIndex] = retryResults[j];
+      });
+      setAnalyzedAssets(merged);
+
+      const usable = merged.filter((r) => r.analysis);
+      const stillFailed = merged.length - usable.length;
+      setAnalysisWarning(
+        stillFailed > 0
+          ? `${stillFailed} of ${merged.length} files still couldn't be analyzed. Click Retry to try again.`
+          : null
+      );
+
+      if (usable.length > 0) {
+        await generateConceptsAndNiche(usable);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsAnalyzing(false);
+      setIsGeneratingReels(false);
+      setAnalysisStep('');
+    }
+  }, [analyzedAssets, uploadedFiles, generateConceptsAndNiche]);
 
   // Re-generate reel concepts at a different length without re-analyzing.
   const handleChangeLength = useCallback(async (length) => {
@@ -204,6 +268,15 @@ export default function App() {
       />
 
       {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
+
+      {!error && analysisWarning && (
+        <ErrorBanner
+          variant="warning"
+          message={analysisWarning}
+          onDismiss={() => setAnalysisWarning(null)}
+          onRetry={isWorking ? undefined : handleRetryFailed}
+        />
+      )}
 
       <main style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 20px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: uploadedFiles.length > 0 ? '1fr 1fr' : '1fr', gap: 24 }}>

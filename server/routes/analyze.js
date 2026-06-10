@@ -18,6 +18,15 @@ function parseJSON(text) {
   return JSON.parse(cleaned);
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Small pause between sequential Groq calls so a batch of images doesn't
+// burst past Groq's free-tier per-minute rate limit, which previously caused
+// a chunk of mid/late-batch images to fail with no remaining retries.
+const INTER_CALL_DELAY_MS = 350;
+
 async function analyzeAsset(file) {
   const isVideo = file.isVideo;
 
@@ -45,7 +54,9 @@ router.post('/', async (req, res) => {
   }
 
   const results = [];
-  for (const file of files) {
+  for (let i = 0; i < files.length; i++) {
+    if (i > 0) await sleep(INTER_CALL_DELAY_MS);
+    const file = files[i];
     try {
       const analysis = await analyzeAsset(file);
       results.push({ ...file, base64: undefined, analysis, error: null });

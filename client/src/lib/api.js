@@ -4,8 +4,10 @@ const BASE = process.env.REACT_APP_API_URL || '/api';
 
 // Send analysis in small batches so we stay under Vercel's ~4.5MB request-body
 // limit and pace requests against the Groq free-tier rate limit. This lets the
-// app accept an unlimited number of uploads.
-const ANALYZE_BATCH_SIZE = 4;
+// app accept an unlimited number of uploads. Smaller batches (2) leave more
+// headroom under Vercel's 60s function timeout for per-image retries when
+// Groq's free-tier rate limit kicks in on large uploads.
+const ANALYZE_BATCH_SIZE = 2;
 
 export async function analyzeMedia(files, onProgress) {
   const results = [];

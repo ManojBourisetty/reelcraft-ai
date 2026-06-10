@@ -24,8 +24,8 @@ function getKey() {
 // (e.g. analyzing many images back-to-back) can hit 429s mid-batch. Retry
 // those with backoff (honoring Retry-After) so transient limits don't fail
 // individual assets outright.
-const MAX_RETRIES = 2;
-const MAX_BACKOFF_MS = 8000;
+const MAX_RETRIES = 3;
+const MAX_BACKOFF_MS = 12000;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));

@@ -24,28 +24,42 @@ const LENGTH_PRESETS = {
 function dedupeClipOrder(clipOrder, assetCount) {
   if (!Array.isArray(clipOrder) || assetCount === 0) return clipOrder;
 
-  const used = new Set();
+  const used = [];
+  const usedSet = new Set();
   const unused = [];
   for (let i = 1; i <= assetCount; i++) unused.push(i);
 
+  // Round-robin cursor for the "clips outnumber assets" overflow case, so
+  // repeats cycle through every used asset instead of collapsing onto one.
+  let repeatCursor = 0;
+
   return clipOrder.map((entry) => {
     const clip = entry.clip;
-    const isValidUnused = clip >= 1 && clip <= assetCount && !used.has(clip);
+    const isValidUnused = clip >= 1 && clip <= assetCount && !usedSet.has(clip);
 
     if (isValidUnused) {
-      used.add(clip);
+      usedSet.add(clip);
+      used.push(clip);
       unused.splice(unused.indexOf(clip), 1);
       return entry;
     }
 
     if (unused.length > 0) {
       const next = unused.shift();
-      used.add(next);
+      usedSet.add(next);
+      used.push(next);
       return { ...entry, clip: next };
     }
 
     // No unused assets left — only happens when clips outnumber assets.
-    return { ...entry, clip: clip >= 1 && clip <= assetCount ? clip : [...used][0] || 1 };
+    // Reuse the AI's own choice if it's a valid in-range asset (even if
+    // already used), otherwise cycle through previously-used assets so
+    // overflow clips don't all collapse onto the same single asset.
+    if (clip >= 1 && clip <= assetCount) return entry;
+
+    const fallback = used[repeatCursor % used.length] || 1;
+    repeatCursor += 1;
+    return { ...entry, clip: fallback };
   });
 }
 
