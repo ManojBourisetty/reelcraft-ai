@@ -4,14 +4,12 @@ import { Upload, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { processFile } from '../lib/mediaProcessor';
 
+// Wildcards + explicit extensions keep iOS Safari happy: iPhone photos are
+// often HEIC/HEIF and iOS may report an empty MIME type, so we match broadly
+// and let the processor convert to JPEG via canvas.
 const ACCEPTED = {
-  'image/jpeg': ['.jpg', '.jpeg'],
-  'image/png': ['.png'],
-  'image/webp': ['.webp'],
-  'video/mp4': ['.mp4'],
-  'video/quicktime': ['.mov'],
-  'video/webm': ['.webm'],
-  'video/x-m4v': ['.m4v'],
+  'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'],
+  'video/*': ['.mp4', '.mov', '.webm', '.m4v'],
 };
 
 export default function UploadZone({ onFilesReady }) {
@@ -23,7 +21,7 @@ export default function UploadZone({ onFilesReady }) {
     setUploadError(null);
 
     if (rejected.length > 0) {
-      setUploadError(`${rejected.length} file(s) rejected — only JPG, PNG, WEBP, MP4, MOV, WEBM, M4V allowed.`);
+      setUploadError(`${rejected.length} file(s) rejected — only photos and videos are supported.`);
     }
     if (accepted.length === 0) return;
 
@@ -51,6 +49,9 @@ export default function UploadZone({ onFilesReady }) {
     accept: ACCEPTED,
     maxFiles: 10,
     maxSize: 100 * 1024 * 1024,
+    // iOS Safari has no File System Access API — without this, tapping "Done"
+    // in the photo picker silently no-ops. Force the classic <input type=file>.
+    useFsAccessApi: false,
     disabled: isProcessing,
   });
 

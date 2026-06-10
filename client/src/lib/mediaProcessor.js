@@ -94,7 +94,9 @@ export async function processFile(file, id) {
     }
   } else {
     base64 = await compressImage(file);
-    thumbnailUrl = URL.createObjectURL(file); // original for crisp thumbnail display
+    // Use the canvas-converted JPEG for the thumbnail so HEIC/HEIF photos
+    // (iPhone default) render reliably in <img> across browsers.
+    thumbnailUrl = `data:image/jpeg;base64,${base64}`;
   }
 
   return {
