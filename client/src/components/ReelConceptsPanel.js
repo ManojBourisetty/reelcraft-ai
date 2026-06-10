@@ -92,6 +92,35 @@ function ConceptCard({ concept, isActive, onSelect, onGetCaptions, isGeneratingC
           <p style={{ margin: 0, fontSize: 13, color: '#94A3B8', lineHeight: 1.5 }}>
             <strong style={{ color: '#7C3AED' }}>Hook:</strong> {concept.hook}
           </p>
+
+          {/* Always-visible primary action — render the actual reel video */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onCreateReel(concept); }}
+            disabled={isRendering}
+            style={{
+              marginTop: 12,
+              width: '100%',
+              background: 'linear-gradient(135deg, #7C3AED, #EC4899)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 10,
+              padding: '10px',
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: isRendering ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              opacity: isRendering ? 0.7 : 1,
+            }}
+            title="Stitch your clips into a 9:16 vertical MP4 — rendered in your browser"
+          >
+            {isRendering
+              ? <><Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> Rendering Reel...</>
+              : <><Video size={13} /> Create Reel Video (9:16)</>
+            }
+          </button>
         </div>
         <ChevronRight
           size={16}
@@ -162,34 +191,6 @@ function ConceptCard({ concept, isActive, onSelect, onGetCaptions, isGeneratingC
             {isGeneratingCaptions
               ? <><Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> Generating Captions...</>
               : <><Zap size={13} /> Generate Captions & Hashtags</>
-            }
-          </button>
-
-          <button
-            onClick={() => onCreateReel(concept)}
-            disabled={isRendering}
-            style={{
-              marginTop: 10,
-              width: '100%',
-              background: 'transparent',
-              color: '#A78BFA',
-              border: '1px solid rgba(124,58,237,0.5)',
-              borderRadius: 10,
-              padding: '10px',
-              fontWeight: 600,
-              fontSize: 13,
-              cursor: isRendering ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              opacity: isRendering ? 0.6 : 1,
-            }}
-            title="Stitch your clips into a 9:16 vertical MP4 — rendered in your browser"
-          >
-            {isRendering
-              ? <><Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> Rendering Reel...</>
-              : <><Video size={13} /> Create Reel Video (9:16)</>
             }
           </button>
         </div>
