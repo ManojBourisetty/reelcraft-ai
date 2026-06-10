@@ -20,17 +20,45 @@ function getKey() {
   return key;
 }
 
-async function chat(model, messages) {
-  const res = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${getKey()}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ model, messages, temperature: 0.7 }),
-  });
+// Groq's free tier enforces per-minute rate limits; bursts of vision calls
+// (e.g. analyzing many images back-to-back) can hit 429s mid-batch. Retry
+// those with backoff (honoring Retry-After) so transient limits don't fail
+// individual assets outright.
+const MAX_RETRIES = 2;
+const MAX_BACKOFF_MS = 8000;
 
-  if (!res.ok) {
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function chat(model, messages) {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${getKey()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ model, messages, temperature: 0.7 }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const text = data?.choices?.[0]?.message?.content;
+      if (!text) throw new Error('Groq API returned an empty response.');
+      return text;
+    }
+
+    if (res.status === 429 && attempt < MAX_RETRIES) {
+      const retryAfter = parseFloat(res.headers.get('retry-after'));
+      const delayMs = Math.min(
+        Number.isFinite(retryAfter) ? retryAfter * 1000 : 2 ** attempt * 1000,
+        MAX_BACKOFF_MS
+      );
+      await sleep(delayMs);
+      continue;
+    }
+
     let detail = '';
     try {
       const body = await res.json();
@@ -40,11 +68,6 @@ async function chat(model, messages) {
     }
     throw new Error(`Groq API ${res.status}: ${detail}`);
   }
-
-  const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content;
-  if (!text) throw new Error('Groq API returned an empty response.');
-  return text;
 }
 
 /**

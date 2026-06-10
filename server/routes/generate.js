@@ -12,10 +12,42 @@ function parseJSON(text) {
 
 // Reel length presets — target duration + clip count guidance for the model.
 const LENGTH_PRESETS = {
-  short: { label: 'short', seconds: '12–20 seconds', clips: '3–5 clips' },
-  medium: { label: 'medium', seconds: '25–40 seconds', clips: '6–10 clips' },
-  long: { label: 'long', seconds: '50–75 seconds', clips: '12–20 clips' },
+  short: { label: 'short', seconds: '12–20 seconds', clips: '3–5 clips', minClips: 3 },
+  medium: { label: 'medium', seconds: '25–40 seconds', clips: '6–10 clips', minClips: 6 },
+  long: { label: 'long', seconds: '50–75 seconds', clips: '12–20 clips', minClips: 12 },
 };
+
+// Ensure clipOrder doesn't repeat assets unnecessarily. The model is allowed
+// to reuse a strong asset only when there are fewer assets than clips; when
+// there are enough unique assets, reassign duplicate/invalid clip references
+// to assets that haven't been used yet.
+function dedupeClipOrder(clipOrder, assetCount) {
+  if (!Array.isArray(clipOrder) || assetCount === 0) return clipOrder;
+
+  const used = new Set();
+  const unused = [];
+  for (let i = 1; i <= assetCount; i++) unused.push(i);
+
+  return clipOrder.map((entry) => {
+    const clip = entry.clip;
+    const isValidUnused = clip >= 1 && clip <= assetCount && !used.has(clip);
+
+    if (isValidUnused) {
+      used.add(clip);
+      unused.splice(unused.indexOf(clip), 1);
+      return entry;
+    }
+
+    if (unused.length > 0) {
+      const next = unused.shift();
+      used.add(next);
+      return { ...entry, clip: next };
+    }
+
+    // No unused assets left — only happens when clips outnumber assets.
+    return { ...entry, clip: clip >= 1 && clip <= assetCount ? clip : [...used][0] || 1 };
+  });
+}
 
 router.post('/reels', async (req, res) => {
   const { assets, length } = req.body;
@@ -29,10 +61,14 @@ router.post('/reels', async (req, res) => {
     .map((a, i) => `Asset ${i + 1}: [${a.contentType}] "${a.description}" — Score: ${a.reelScore}/10. Use: ${a.suggestedUse}`)
     .join('\n');
 
+  const repeatGuidance = assets.length >= preset.minClips
+    ? `There are ${assets.length} assets available — that's enough to cover a ${preset.label} reel without repeats. Use each asset at most once across clipOrder.`
+    : `There are only ${assets.length} assets available, fewer than the ${preset.clips} target for a ${preset.label} reel — repeat the strongest assets as needed to reach the target length, but spread repeats across different assets rather than reusing the same one repeatedly.`;
+
   const prompt = `You are an Instagram reel strategist. These assets are pre-ranked by reel-score (higher = stronger):
 ${assetList}
 
-Target a ${preset.label} reel: about ${preset.seconds} long, roughly ${preset.clips}. SELECT the strongest, most cohesive assets (favor higher scores) and arrange them to fit this length — you may repeat a strong asset if needed to reach the target, and you do not need to use weak assets just to fill time. Reference assets by their "Asset N" number in clipOrder using the "clip" field, and make the "duration" field reflect the ${preset.label} target.
+Target a ${preset.label} reel: about ${preset.seconds} long, roughly ${preset.clips}. SELECT the strongest, most cohesive assets (favor higher scores) and arrange them to fit this length. ${repeatGuidance} Reference assets by their "Asset N" number in clipOrder using the "clip" field, and make the "duration" field reflect the ${preset.label} target.
 
 Generate 3 distinct reel concepts. Return ONLY a valid JSON array (no markdown) with exactly 3 objects:
 [{
@@ -50,7 +86,11 @@ Generate 3 distinct reel concepts. Return ONLY a valid JSON array (no markdown) 
   try {
     const text = await generateText(prompt);
     const concepts = parseJSON(text);
-    res.json({ concepts });
+    const deduped = concepts.map((c) => ({
+      ...c,
+      clipOrder: dedupeClipOrder(c.clipOrder, assets.length),
+    }));
+    res.json({ concepts: deduped });
   } catch (err) {
     console.error('[generate/reels]', err.message);
     res.status(500).json({ error: err.message });
