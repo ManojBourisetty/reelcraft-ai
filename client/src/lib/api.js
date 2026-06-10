@@ -2,11 +2,22 @@ import axios from 'axios';
 
 const BASE = process.env.REACT_APP_API_URL || '/api';
 
-export async function analyzeMedia(files) {
-  const { data } = await axios.post(`${BASE}/analyze`, { files }, {
-    timeout: 120000, // 2 min — 10 images through Gemini can take a while
-  });
-  return data;
+// Send analysis in small batches so we stay under Vercel's ~4.5MB request-body
+// limit and pace requests against the Groq free-tier rate limit. This lets the
+// app accept an unlimited number of uploads.
+const ANALYZE_BATCH_SIZE = 4;
+
+export async function analyzeMedia(files, onProgress) {
+  const results = [];
+  for (let i = 0; i < files.length; i += ANALYZE_BATCH_SIZE) {
+    const batch = files.slice(i, i + ANALYZE_BATCH_SIZE);
+    const { data } = await axios.post(`${BASE}/analyze`, { files: batch }, {
+      timeout: 120000,
+    });
+    results.push(...(data.results || []));
+    onProgress?.(Math.min(i + batch.length, files.length), files.length);
+  }
+  return { results };
 }
 
 export async function generateReels(assets) {

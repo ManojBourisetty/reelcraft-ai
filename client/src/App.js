@@ -13,9 +13,16 @@ import ReelRenderModal from './components/ReelRenderModal';
 import { analyzeMedia, generateReels, generateCaptions, detectNiche } from './lib/api';
 import { renderReel, buildClips } from './lib/videoRenderer';
 
+// Cap how many top-ranked assets are fed to the reel/niche models so large
+// uploads don't blow the prompt budget. The grid still shows everything.
+const REEL_MAX_ASSETS = 20;
+
 export default function App() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [analyzedAssets, setAnalyzedAssets] = useState([]);
+  // Top-ranked assets (by AI reel-score) actually used to build reels — kept in
+  // a fixed order so reel clipOrder indices map back to the right source files.
+  const [rankedAssets, setRankedAssets] = useState([]);
   const [reelConcepts, setReelConcepts] = useState([]);
   const [nicheData, setNicheData] = useState(null);
   const [captionData, setCaptionData] = useState(null);
@@ -44,6 +51,7 @@ export default function App() {
 
     setUploadedFiles(descriptors);
     setAnalyzedAssets([]);
+    setRankedAssets([]);
     setReelConcepts([]);
     setNicheData(null);
     setCaptionData(null);
@@ -60,13 +68,17 @@ export default function App() {
     setError(null);
     setIsAnalyzing(true);
     setAnalyzedAssets([]);
+    setRankedAssets([]);
     setReelConcepts([]);
     setNicheData(null);
     setCaptionData(null);
 
     try {
-      setAnalysisStep('Analyzing media with AI...');
-      const { results } = await analyzeMedia(uploadedFiles);
+      const total = uploadedFiles.length;
+      setAnalysisStep(`Analyzing media with AI… (0/${total})`);
+      const { results } = await analyzeMedia(uploadedFiles, (done, t) => {
+        setAnalysisStep(`Analyzing media with AI… (${done}/${t})`);
+      });
       setAnalyzedAssets(results);
 
       const usable = results.filter((r) => r.analysis);
@@ -83,17 +95,25 @@ export default function App() {
         return;
       }
 
+      // Rank by AI reel-score (desc) and take the strongest assets. The model
+      // then picks/orders the best of these into clips; the same ordered list
+      // backs reel rendering so clip indices resolve to the right files.
+      const ranked = [...usable]
+        .sort((a, b) => (b.analysis.reelScore || 0) - (a.analysis.reelScore || 0))
+        .slice(0, REEL_MAX_ASSETS);
+      setRankedAssets(ranked);
+
       setAnalysisStep('Generating reel concepts...');
       setIsGeneratingReels(true);
-      const usableAssets = usable.map((r) => r.analysis);
-      const { concepts } = await generateReels(usableAssets);
+      const rankedAnalyses = ranked.map((r) => r.analysis);
+      const { concepts } = await generateReels(rankedAnalyses);
       setReelConcepts(concepts);
       setActiveConcept(concepts[0]);
       setIsGeneratingReels(false);
 
       setAnalysisStep('Detecting your niche...');
       setIsDetectingNiche(true);
-      const niche = await detectNiche(usableAssets);
+      const niche = await detectNiche(rankedAnalyses);
       setNicheData(niche);
       setIsDetectingNiche(false);
 
@@ -122,11 +142,10 @@ export default function App() {
   }, []);
 
   const isWorking = isAnalyzing || isGeneratingReels || isDetectingNiche;
-  const usableAssets = analyzedAssets.filter((a) => a.analysis);
-  const peopleCount = analyzedAssets.filter((a) => a.analysis?.hasPeople).length;
+  const peopleCount = rankedAssets.filter((a) => a.analysis?.hasPeople).length;
 
   const handleCreateReel = useCallback(async (concept) => {
-    const clips = buildClips(concept, usableAssets, originalFilesRef.current);
+    const clips = buildClips(concept, rankedAssets, originalFilesRef.current);
     if (clips.length === 0) {
       setRenderState({
         status: 'error',
@@ -147,7 +166,7 @@ export default function App() {
     } catch (err) {
       setRenderState({ status: 'error', error: err.message, title: concept?.title });
     }
-  }, [usableAssets]);
+  }, [rankedAssets]);
 
   const handleCloseRender = useCallback(() => {
     setRenderState((prev) => {
@@ -202,7 +221,7 @@ export default function App() {
                   isGeneratingCaptions={isGeneratingCaptions}
                   onCreateReel={handleCreateReel}
                   isRendering={renderState?.status === 'rendering'}
-                  usableCount={usableAssets.length}
+                  usableCount={rankedAssets.length}
                   peopleCount={peopleCount}
                 />
               )}

@@ -47,7 +47,7 @@ export default function UploadZone({ onFilesReady }) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: ACCEPTED,
-    maxFiles: 10,
+    maxFiles: 0, // unlimited — the AI ranks and picks the best clips for the reel
     maxSize: 100 * 1024 * 1024,
     // iOS Safari has no File System Access API — without this, tapping "Done"
     // in the photo picker silently no-ops. Force the classic <input type=file>.
@@ -89,7 +89,7 @@ export default function UploadZone({ onFilesReady }) {
               Drag & drop media here
             </p>
             <p style={{ color: 'var(--color-muted)', fontSize: 13, margin: 0 }}>
-              Photos (JPG, PNG, WEBP) or videos (MP4, MOV, WEBM, M4V) · up to 10 files
+              Photos or videos · upload as many as you like — the AI picks the best for your reel
             </p>
           </>
         )}

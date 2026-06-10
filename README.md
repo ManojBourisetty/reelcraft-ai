@@ -42,7 +42,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Usage
 
-1. **Upload** — drag-and-drop up to 10 photos (JPG/PNG/WEBP) or videos (MP4/MOV/WEBM/M4V) (processed locally in your browser)
+1. **Upload** — drag-and-drop as many photos (JPG/PNG/WEBP/HEIC) or videos (MP4/MOV/WEBM/M4V) as you like (processed locally in your browser); the AI ranks them and picks the best for your reel
 2. **Analyze** — click "Analyze My Media" in the top bar
 3. **Review** — each asset shows a reel-score badge (1–10) and content type; assets containing people get a small badge for reference
 4. **Reel Concepts** — 3 AI-generated concepts appear in the right panel; expand any to see clip order, script, and music suggestions

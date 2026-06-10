@@ -20,8 +20,10 @@ router.post('/reels', async (req, res) => {
     .map((a, i) => `Asset ${i + 1}: [${a.contentType}] "${a.description}" — Score: ${a.reelScore}/10. Use: ${a.suggestedUse}`)
     .join('\n');
 
-  const prompt = `You are an Instagram reel strategist. Given these assets:
+  const prompt = `You are an Instagram reel strategist. These assets are pre-ranked by reel-score (higher = stronger):
 ${assetList}
+
+You do NOT need to use every asset. For each concept, SELECT the strongest, most cohesive assets (favor higher scores) and arrange them into a tight, scroll-stopping reel — a focused 5–8 clip reel usually outperforms one that crams everything in. Reference assets by their "Asset N" number in clipOrder using the "clip" field.
 
 Generate 3 distinct reel concepts. Return ONLY a valid JSON array (no markdown) with exactly 3 objects:
 [{
