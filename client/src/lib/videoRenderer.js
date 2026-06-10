@@ -9,9 +9,6 @@
  * is rendered, then cached for the session.
  */
 
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
-
 const CORE_VERSION = '0.12.10';
 const CORE_BASE = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd`;
 
@@ -34,8 +31,12 @@ let loadPromise = null;
 async function getFFmpeg(onStatus) {
   if (ffmpeg) return ffmpeg;
   if (!loadPromise) {
-    const instance = new FFmpeg();
     loadPromise = (async () => {
+      const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
+        import('@ffmpeg/ffmpeg'),
+        import('@ffmpeg/util'),
+      ]);
+      const instance = new FFmpeg();
       onStatus?.('Loading video engine (first run downloads ~25MB)…');
       await instance.load({
         coreURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.js`, 'text/javascript'),
@@ -71,6 +72,7 @@ export async function renderReel(clips, onProgress) {
   }
 
   const ff = await getFFmpeg((text) => onProgress?.(text, null));
+  const { fetchFile } = await import('@ffmpeg/util');
 
   // Normalize each clip into a uniform 1080x1920 / 30fps / H.264 video-only segment.
   const segmentNames = [];

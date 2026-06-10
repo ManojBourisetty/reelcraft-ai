@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
 import { processFile } from '../lib/mediaProcessor';
 
 // Wildcards + explicit extensions keep iOS Safari happy: iPhone photos are
@@ -32,7 +31,7 @@ export default function UploadZone({ onFilesReady }) {
       const file = accepted[i];
       setProgress(`Processing ${i + 1} / ${accepted.length}…`);
       try {
-        const result = await processFile(file, uuidv4());
+        const result = await processFile(file, crypto.randomUUID());
         processed.push(result);
       } catch (err) {
         console.error('Failed to process', file.name, err);
