@@ -25,6 +25,14 @@ const COVER_FILTER =
   `scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase,` +
   `crop=${WIDTH}:${HEIGHT},setsar=1,fps=${FPS},format=yuv420p`;
 
+// Photos straight off a phone (12MP+, often HEIC) make the WASM scale/encode
+// step extremely slow — each second of a looped photo re-decodes and rescales
+// the full-resolution source 30 times. Downscaling to a longer-edge cap before
+// handing the file to FFmpeg cuts that work down without affecting the final
+// 1080x1920 output (anything beyond this is cropped away anyway).
+const MAX_PHOTO_DIM = 2160;
+const PHOTO_JPEG_QUALITY = 0.92;
+
 let ffmpeg = null;
 let loadPromise = null;
 
@@ -61,6 +69,60 @@ function clipDuration(clip) {
 
 const extFor = (asset) => (asset.isVideo ? 'mp4' : 'jpg');
 
+const isHeic = (file) => /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name || '');
+
+/**
+ * Downscale a photo to a manageable resolution (and convert HEIC -> JPEG) before
+ * handing it to FFmpeg.wasm. Source photos straight off a phone camera are often
+ * 12MP+; looping and scaling that for every frame of a clip is the dominant cost
+ * of rendering on Safari. Capping the longer edge at MAX_PHOTO_DIM keeps full
+ * quality for the final 1080x1920 output while drastically cutting decode/scale work.
+ *
+ * @param {File|Blob} file
+ * @returns {Promise<Blob>} a JPEG blob, resized if it exceeded MAX_PHOTO_DIM
+ */
+async function preparePhotoInput(file) {
+  let source = file;
+  if (isHeic(file)) {
+    const { default: heic2any } = await import('heic2any');
+    const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: PHOTO_JPEG_QUALITY });
+    source = Array.isArray(out) ? out[0] : out;
+  }
+
+  const url = URL.createObjectURL(source);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error('Image load failed'));
+      el.src = url;
+    });
+
+    const { naturalWidth: w, naturalHeight: h } = img;
+    const longEdge = Math.max(w, h);
+    if (longEdge <= MAX_PHOTO_DIM && source.type === 'image/jpeg') {
+      return source;
+    }
+
+    const scale = Math.min(1, MAX_PHOTO_DIM / longEdge);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(w * scale);
+    canvas.height = Math.round(h * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('Canvas export failed'))),
+        'image/jpeg',
+        PHOTO_JPEG_QUALITY
+      );
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 /**
  * @param {Array<{ asset: { isVideo: boolean }, file: Blob, startSec: number, endSec: number }>} clips
  * @param {(text: string, ratio: number|null) => void} [onProgress]
@@ -86,7 +148,8 @@ export async function renderReel(clips, onProgress) {
     const segName = `seg${i}.mp4`;
 
     onProgress?.(`Processing clip ${i + 1} of ${clips.length}…`, i / totalSteps);
-    await ff.writeFile(inName, await fetchFile(file));
+    const inputFile = asset.isVideo ? file : await preparePhotoInput(file);
+    await ff.writeFile(inName, await fetchFile(inputFile));
 
     const args = asset.isVideo
       ? [
