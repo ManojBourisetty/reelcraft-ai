@@ -75,6 +75,9 @@ export async function renderReel(clips, onProgress) {
   const { fetchFile } = await import('@ffmpeg/util');
 
   // Normalize each clip into a uniform 1080x1920 / 30fps / H.264 video-only segment.
+  // Reserve the final step (concat) as its own slice of the progress bar so it
+  // doesn't sit at 100% while the (usually fast) concat is still running.
+  const totalSteps = clips.length + 1;
   const segmentNames = [];
   for (let i = 0; i < clips.length; i++) {
     const { asset, file, startSec } = clips[i];
@@ -82,7 +85,7 @@ export async function renderReel(clips, onProgress) {
     const inName = `in${i}.${extFor(asset)}`;
     const segName = `seg${i}.mp4`;
 
-    onProgress?.(`Processing clip ${i + 1} of ${clips.length}…`, null);
+    onProgress?.(`Processing clip ${i + 1} of ${clips.length}…`, i / totalSteps);
     await ff.writeFile(inName, await fetchFile(file));
 
     const args = asset.isVideo
@@ -114,7 +117,7 @@ export async function renderReel(clips, onProgress) {
   const listFile = segmentNames.map((n) => `file '${n}'`).join('\n');
   await ff.writeFile('concat.txt', new TextEncoder().encode(listFile));
 
-  onProgress?.('Stitching final reel…', null);
+  onProgress?.('Stitching final reel…', clips.length / totalSteps);
   await ff.exec([
     '-f', 'concat', '-safe', '0',
     '-i', 'concat.txt',
