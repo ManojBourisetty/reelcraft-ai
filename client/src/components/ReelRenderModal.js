@@ -41,7 +41,12 @@ export default function ReelRenderModal({ state, onClose }) {
         {status === 'rendering' && (
           <div style={{ textAlign: 'center', padding: '12px 0' }}>
             <Loader size={32} color="#A78BFA" style={{ animation: 'spin 1s linear infinite', marginBottom: 14 }} />
-            <p style={{ margin: '0 0 14px', fontSize: 14, color: '#CBD5E1' }}>{step || 'Working…'}</p>
+            <p style={{ margin: '0 0 14px', fontSize: 14, color: '#CBD5E1' }}>
+              {step || 'Working…'}
+              {ratio != null && (
+                <span style={{ color: '#A78BFA', fontWeight: 600 }}> {Math.round(ratio * 100)}%</span>
+              )}
+            </p>
             <div style={{ height: 6, borderRadius: 4, background: 'var(--color-card)', overflow: 'hidden' }}>
               <div style={{
                 height: '100%',
